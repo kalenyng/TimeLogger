@@ -241,13 +241,10 @@ const rateTextByIndex = Object.keys(daysData).map(d => {
   </div>
 
   <script define:vars={{ labels, hoursData, rateTextByIndex }}>
-    // Lazy-load Chart.js only when chart becomes visible
-    const canvas = document.getElementById('weeklyChart');
-    if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
-
-    const observer = new IntersectionObserver(async ([entry]) => {
-      if (!entry.isIntersecting) return;
-      observer.disconnect();
+    // Load Chart.js and render immediately
+    async function initChart() {
+      const canvas = document.getElementById('weeklyChart');
+      if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
 
       async function ensureChart() {
         if (window.Chart) return window.Chart;
@@ -319,9 +316,10 @@ const rateTextByIndex = Object.keys(daysData).map(d => {
       } catch (e) {
         console.error('Failed to load chart', e);
       }
-    }, { threshold: 0.1 });
+    }
 
-    observer.observe(canvas);
+    // Init chart on load
+    initChart();
 
     // Inline edit handler for hours cells
     const table = document.querySelector('.data-table');
