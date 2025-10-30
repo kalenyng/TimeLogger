@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return redirect('/');
   }
 
-  const log = logs[0];
+  const log = logs[0] as any;
 
   // Calculate total elapsed time
   let totalSeconds = log.total_seconds || 0;
@@ -36,9 +36,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     totalSeconds += Math.floor((nowTime - startTime) / 1000);
   }
 
-  const { error } = await supabase
+  const { error } = await (supabase
     .from('work_logs')
-    .update({
+    .update as any)({
       end_time: new Date().toISOString(),
       total_seconds: totalSeconds
     })

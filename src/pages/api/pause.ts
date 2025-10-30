@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     return redirect('/');
   }
 
-  const log = logs[0];
+  const log = logs[0] as any;
   
   if (log.pause_time) {
     return redirect('/'); // Already paused
@@ -35,9 +35,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
   const nowTime = Date.now();
   const elapsed = Math.floor((nowTime - startTime) / 1000) + (log.total_seconds || 0);
 
-  const { error } = await supabase
+  const { error } = await (supabase
     .from('work_logs')
-    .update({
+    .update as any)({
       pause_time: new Date().toISOString(),
       total_seconds: elapsed
     })

@@ -87,6 +87,24 @@ const initialState = {
           <button id="endBtn" class="btn btn-danger">End Day</button>
         </div>
       </div>
+
+      {currentLog && !currentLog.pause_time && (
+        <form method="POST" action="/api/complete-task" class="task-form" id="completeForm">
+          <input
+            type="text"
+            name="description"
+            placeholder="What did you complete?"
+            class="form-input"
+            required
+          />
+          <button type="button" class="btn btn-success" onclick="const f=this.closest('form'); if(!this.disabled && f.checkValidity()){this.classList.add('loading'); this.disabled=true; f.submit();}else if(!f.checkValidity()){f.reportValidity();}">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <path d="M4 10l4 4L16 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Complete Task
+          </button>
+        </form>
+      )}
     </div>
 
     {tasks.length > 0 && (
@@ -154,7 +172,9 @@ const initialState = {
 
     async function start() {
       if (isPending || log) return;
-      isPending = true; render();
+      isPending = true;
+      startBtn.classList.add('loading');
+      startBtn.disabled = true;
       try {
         const res = await fetch('/api/start', { method: 'POST' });
         if (res.ok) {
@@ -164,13 +184,16 @@ const initialState = {
         }
       } catch (e) {
         console.error(e); alert('Failed to start');
+        startBtn.classList.remove('loading');
         isPending = false; render();
       }
     }
 
     async function pause() {
       if (isPending || !log || log.pause_time) return;
-      isPending = true; render();
+      isPending = true;
+      pauseBtn.classList.add('loading');
+      pauseBtn.disabled = true;
       try {
         const res = await fetch('/api/pause', { method: 'POST' });
         if (res.ok) {
@@ -180,13 +203,16 @@ const initialState = {
         }
       } catch (e) {
         console.error(e); alert('Failed to pause');
+        pauseBtn.classList.remove('loading');
         isPending = false; render();
       }
     }
 
     async function resume() {
       if (isPending || !log || !log.pause_time) return;
-      isPending = true; render();
+      isPending = true;
+      resumeBtn.classList.add('loading');
+      resumeBtn.disabled = true;
       try {
         const res = await fetch('/api/resume', { method: 'POST' });
         if (res.ok) {
@@ -196,13 +222,16 @@ const initialState = {
         }
       } catch (e) {
         console.error(e); alert('Failed to resume');
+        resumeBtn.classList.remove('loading');
         isPending = false; render();
       }
     }
 
     async function endDay() {
       if (isPending || !log) return;
-      isPending = true; render();
+      isPending = true;
+      endBtn.classList.add('loading');
+      endBtn.disabled = true;
       try {
         const res = await fetch('/api/end-day', { method: 'POST' });
         if (res.ok) {
@@ -212,6 +241,7 @@ const initialState = {
         }
       } catch (e) {
         console.error(e); alert('Failed to end day');
+        endBtn.classList.remove('loading');
         isPending = false; render();
       }
     }
@@ -239,6 +269,7 @@ const initialState = {
     .time-display { font-size: 4rem; font-weight: 800; font-family: var(--font-mono); }
     .status { color: var(--color-muted); }
     .controls { display: flex; gap: var(--space-md); }
+    .task-form { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-xl); max-width: 500px; margin-left: auto; margin-right: auto; }
     .tasks-card { padding: var(--space-xl); }
     .tasks-title { margin-bottom: var(--space-lg); }
     .tasks-list { list-style: none; padding: 0; display: grid; gap: var(--space-sm); }

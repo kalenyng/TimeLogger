@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     });
   }
 
-  const log = logs[0];
+  const log = logs[0] as any;
 
   // Get last task time or use start_time
   const { data: lastTask } = await supabase
@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     .limit(1)
     .maybeSingle();
 
-  const baseTime = lastTask?.created_at || log.start_time;
+  const baseTime = (lastTask as any)?.created_at || log.start_time;
   const baseTimestamp = new Date(baseTime).getTime();
   const nowTimestamp = Date.now();
   const duration = Math.max(0, Math.floor((nowTimestamp - baseTimestamp) / 1000));
@@ -61,7 +61,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       user_id: user.id,
       description,
       duration
-    });
+    } as any);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {

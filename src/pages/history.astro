@@ -85,7 +85,12 @@ function formatEarnings(seconds: number, rate: number): string {
                     <circle cx="10" cy="10" r="7" stroke-width="2"/>
                     <path d="M10 5v5l3 3" stroke-width="2" stroke-linecap="round"/>
                   </svg>
-                  {formatDateTime(log.start_time)} → {formatDateTime(log.end_time || log.start_time)}
+                  {new Date(log.start_time).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
+                </div>
+                <div class="log-time-range">
+                  {new Date(log.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} 
+                  → 
+                  {new Date(log.end_time || log.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
                 </div>
                 {log.description && (
                   <div class="log-description">{log.description}</div>
@@ -101,6 +106,14 @@ function formatEarnings(seconds: number, rate: number): string {
                   <div class="log-total-value">{symbol}{formatEarnings(log.total_seconds || 0, log.hourly_rate_at_time ?? settings.hourly_rate)}</div>
                 </div>
               </div>
+              <form method="POST" action={`/api/delete-log?id=${log.id}`} class="delete-log-form" onsubmit="return confirm('Delete this work session? This cannot be undone.');">
+                <button type="submit" class="btn-icon btn-danger-ghost" title="Delete session">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                    <path d="M3 5h14M8 5V3h4v2M16 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5" stroke-width="2" stroke-linecap="round"/>
+                    <path d="M8 9v6M12 9v6" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </button>
+              </form>
             </div>
 
             {tasks.length > 0 ? (
@@ -252,6 +265,33 @@ function formatEarnings(seconds: number, rate: number): string {
     padding-bottom: var(--space-lg);
     border-bottom: 1px solid var(--color-border);
     margin-bottom: var(--space-lg);
+    position: relative;
+  }
+
+  .delete-log-form {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+
+  .btn-icon {
+    padding: var(--space-sm);
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-danger-ghost {
+    color: var(--color-danger);
+  }
+
+  .btn-danger-ghost:hover {
+    background: var(--color-danger-light);
   }
 
   .log-info {
@@ -271,6 +311,13 @@ function formatEarnings(seconds: number, rate: number): string {
   .log-date-range svg {
     flex-shrink: 0;
     color: var(--color-accent);
+  }
+
+  .log-time-range {
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    margin-top: var(--space-xs);
+    margin-left: calc(16px + var(--space-sm));
   }
 
   .log-description {

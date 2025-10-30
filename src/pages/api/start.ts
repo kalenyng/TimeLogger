@@ -23,7 +23,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
       start_time: new Date().toISOString(),
       total_seconds: 0,
       hourly_rate_at_time: currentRate
-    });
+    } as any);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {

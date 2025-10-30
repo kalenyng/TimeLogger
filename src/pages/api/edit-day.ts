@@ -27,7 +27,7 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     .order('id', { ascending: true });
 
   const targetSeconds = Math.round(hours * 3600);
-  const existingSeconds = (logs || []).reduce((acc, l: any) => acc + (l.total_seconds || 0), 0);
+  const existingSeconds = ((logs as any[]) || []).reduce((acc, l: any) => acc + (l.total_seconds || 0), 0);
 
   if (!logs || logs.length === 0) {
     // No logs: create a synthetic log for that day with desired hours
