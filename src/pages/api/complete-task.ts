@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
 
-export const POST: APIRoute = async ({ request, redirect }) => {
+export const POST: APIRoute = async ({ request }) => {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
@@ -70,6 +70,16 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     });
   }
 
-  return redirect('/');
+  // Fetch updated tasks list
+  const { data: tasks } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('work_log_id', log.id)
+    .order('created_at', { ascending: true });
+
+  return new Response(JSON.stringify({ tasks: tasks || [] }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
 };
 

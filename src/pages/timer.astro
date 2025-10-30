@@ -88,48 +88,45 @@ const initialState = {
         </div>
       </div>
 
-      {currentLog && !currentLog.pause_time && (
-        <form method="POST" action="/api/complete-task" class="task-form" id="completeForm">
-          <input
-            type="text"
-            name="description"
-            placeholder="What did you complete?"
-            class="form-input"
-            required
-          />
-          <button type="button" class="btn btn-success" onclick="const f=this.closest('form'); if(!this.disabled && f.checkValidity()){this.classList.add('loading'); this.disabled=true; f.submit();}else if(!f.checkValidity()){f.reportValidity();}">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
-              <path d="M4 10l4 4L16 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Complete Task
-          </button>
-        </form>
-      )}
+      <form method="POST" action="/api/complete-task" class="task-form" id="completeForm" style={!currentLog || currentLog.pause_time ? 'display: none;' : ''}>
+        <input
+          type="text"
+          name="description"
+          placeholder="What did you complete?"
+          class="form-input"
+          required
+          id="taskDescription"
+        />
+        <button type="button" class="btn btn-success" id="completeTaskBtn">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+            <path d="M4 10l4 4L16 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Complete Task
+        </button>
+      </form>
     </div>
 
-    {tasks.length > 0 && (
-      <div class="card tasks-card">
-        <h3 class="tasks-title">Completed Tasks (current session)</h3>
-        <ul class="tasks-list">
-          {tasks.map((task) => (
-            <li class="task-item">
-              <span class="task-description">{task.description}</span>
-              <span class="task-duration">
-                {
-                  (() => {
-                    const s = Number(task.duration || 0);
-                    const h = String(Math.floor(s / 3600)).padStart(2, '0');
-                    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
-                    const sec = String(s % 60).padStart(2, '0');
-                    return `${h}:${m}:${sec}`;
-                  })()
-                }
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
+    <div class="card tasks-card" id="tasksCard" style={tasks.length === 0 ? 'display: none;' : ''}>
+      <h3 class="tasks-title">Completed Tasks (current session)</h3>
+      <ul class="tasks-list" id="tasksList">
+        {tasks.map((task) => (
+          <li class="task-item">
+            <span class="task-description">{task.description}</span>
+            <span class="task-duration">
+              {
+                (() => {
+                  const s = Number(task.duration || 0);
+                  const h = String(Math.floor(s / 3600)).padStart(2, '0');
+                  const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+                  const sec = String(s % 60).padStart(2, '0');
+                  return `${h}:${m}:${sec}`;
+                })()
+              }
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   </div>
 
   <script define:vars={{ initialState }}>
@@ -150,6 +147,7 @@ const initialState = {
     const pauseBtn = document.getElementById('pauseBtn');
     const resumeBtn = document.getElementById('resumeBtn');
     const endBtn = document.getElementById('endBtn');
+    const completeForm = document.getElementById('completeForm');
 
     function elapsedSeconds() {
       if (!log) return 0;
@@ -167,7 +165,15 @@ const initialState = {
       pauseBtn.style.display = log && !log.pause_time ? '' : 'none';
       resumeBtn.style.display = log && log.pause_time ? '' : 'none';
       endBtn.style.display = log ? '' : 'none';
-      [startBtn, pauseBtn, resumeBtn, endBtn].forEach(b => b.disabled = isPending);
+      if (completeForm) {
+        completeForm.style.display = log && !log.pause_time ? '' : 'none';
+      }
+      [startBtn, pauseBtn, resumeBtn, endBtn].forEach(b => {
+        if (b) {
+          b.disabled = isPending;
+          if (!isPending) b.classList.remove('loading');
+        }
+      });
     }
 
     async function start() {
@@ -175,17 +181,22 @@ const initialState = {
       isPending = true;
       startBtn.classList.add('loading');
       startBtn.disabled = true;
+      render();
       try {
         const res = await fetch('/api/start', { method: 'POST' });
-        if (res.ok) {
-          window.location.reload();
+        const data = await res.json();
+        if (res.ok && data.log) {
+          log = data.log;
+          isPending = false;
+          render();
         } else {
-          throw new Error('Failed');
+          throw new Error(data.error || 'Failed');
         }
       } catch (e) {
-        console.error(e); alert('Failed to start');
-        startBtn.classList.remove('loading');
-        isPending = false; render();
+        console.error(e); 
+        alert('Failed to start');
+        isPending = false; 
+        render();
       }
     }
 
@@ -194,17 +205,22 @@ const initialState = {
       isPending = true;
       pauseBtn.classList.add('loading');
       pauseBtn.disabled = true;
+      render();
       try {
         const res = await fetch('/api/pause', { method: 'POST' });
-        if (res.ok) {
-          window.location.reload();
+        const data = await res.json();
+        if (res.ok && data.log) {
+          log = data.log;
+          isPending = false;
+          render();
         } else {
-          throw new Error('Failed');
+          throw new Error(data.error || 'Failed');
         }
       } catch (e) {
-        console.error(e); alert('Failed to pause');
-        pauseBtn.classList.remove('loading');
-        isPending = false; render();
+        console.error(e); 
+        alert('Failed to pause');
+        isPending = false; 
+        render();
       }
     }
 
@@ -213,17 +229,22 @@ const initialState = {
       isPending = true;
       resumeBtn.classList.add('loading');
       resumeBtn.disabled = true;
+      render();
       try {
         const res = await fetch('/api/resume', { method: 'POST' });
-        if (res.ok) {
-          window.location.reload();
+        const data = await res.json();
+        if (res.ok && data.log) {
+          log = data.log;
+          isPending = false;
+          render();
         } else {
-          throw new Error('Failed');
+          throw new Error(data.error || 'Failed');
         }
       } catch (e) {
-        console.error(e); alert('Failed to resume');
-        resumeBtn.classList.remove('loading');
-        isPending = false; render();
+        console.error(e); 
+        alert('Failed to resume');
+        isPending = false; 
+        render();
       }
     }
 
@@ -232,18 +253,91 @@ const initialState = {
       isPending = true;
       endBtn.classList.add('loading');
       endBtn.disabled = true;
+      render();
       try {
         const res = await fetch('/api/end-day', { method: 'POST' });
-        if (res.ok) {
+        const data = await res.json();
+        if (res.ok && data.success) {
+          // End day resets everything - reload to show completed log in history
           window.location.reload();
         } else {
-          throw new Error('Failed');
+          throw new Error(data.error || 'Failed');
         }
       } catch (e) {
-        console.error(e); alert('Failed to end day');
-        endBtn.classList.remove('loading');
-        isPending = false; render();
+        console.error(e); 
+        alert('Failed to end day');
+        isPending = false; 
+        render();
       }
+    }
+
+    // Handle complete task
+    const completeTaskBtn = document.getElementById('completeTaskBtn');
+    const taskDescription = document.getElementById('taskDescription');
+    const tasksList = document.getElementById('tasksList');
+    const tasksCard = document.getElementById('tasksCard');
+
+    if (completeTaskBtn && taskDescription) {
+      completeTaskBtn.addEventListener('click', async function() {
+        if (isPending || !log || log.pause_time) return;
+        
+        const description = taskDescription.value.trim();
+        if (!description) {
+          taskDescription.reportValidity();
+          return;
+        }
+
+        isPending = true;
+        this.classList.add('loading');
+        this.disabled = true;
+
+        try {
+          const formData = new FormData();
+          formData.append('description', description);
+          
+          const res = await fetch('/api/complete-task', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const data = await res.json();
+          
+          if (res.ok && data.tasks) {
+            // Update tasks list
+            tasksList.innerHTML = data.tasks.map(task => {
+              const s = Number(task.duration || 0);
+              const h = String(Math.floor(s / 3600)).padStart(2, '0');
+              const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+              const sec = String(s % 60).padStart(2, '0');
+              const duration = `${h}:${m}:${sec}`;
+              
+              return `<li class="task-item">
+                <span class="task-description">${task.description}</span>
+                <span class="task-duration">${duration}</span>
+              </li>`;
+            }).join('');
+            
+            // Show tasks card if hidden
+            if (data.tasks.length > 0) {
+              tasksCard.style.display = '';
+            }
+            
+            // Clear input
+            taskDescription.value = '';
+            isPending = false;
+            this.classList.remove('loading');
+            this.disabled = false;
+          } else {
+            throw new Error(data.error || 'Failed');
+          }
+        } catch (e) {
+          console.error(e);
+          alert('Failed to complete task');
+          isPending = false;
+          this.classList.remove('loading');
+          this.disabled = false;
+        }
+      });
     }
 
     startBtn.addEventListener('click', start);

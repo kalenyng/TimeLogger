@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
 
-export const POST: APIRoute = async ({ request, redirect }) => {
+export const POST: APIRoute = async ({ request }) => {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!user) {
@@ -21,23 +21,31 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     .limit(1);
 
   if (fetchError || !logs || logs.length === 0) {
-    return redirect('/');
+    return new Response(JSON.stringify({ error: 'No active log' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   const log = logs[0] as any;
   
   if (!log.pause_time) {
-    return redirect('/'); // Not paused
+    return new Response(JSON.stringify({ error: 'Not paused' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 
   // Reset start_time to now, keeping total_seconds
-  const { error } = await (supabase
+  const { data: updatedLog, error } = await (supabase
     .from('work_logs')
     .update as any)({
       start_time: new Date().toISOString(),
       pause_time: null
     })
-    .eq('id', log.id);
+    .eq('id', log.id)
+    .select('id, start_time, pause_time, end_time, total_seconds, hourly_rate_at_time')
+    .single();
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
@@ -46,6 +54,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     });
   }
 
-  return redirect('/');
+  return new Response(JSON.stringify({ log: updatedLog }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' }
+  });
 };
 
