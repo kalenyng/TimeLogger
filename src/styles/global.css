@@ -245,9 +245,14 @@ code, kbd {
   overflow: hidden;
 }
 
+.btn svg {
+  pointer-events: none;
+}
+
 .btn.loading {
   pointer-events: none;
   opacity: 0.7;
+  position: relative;
 }
 
 .btn.loading::after {

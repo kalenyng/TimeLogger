@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { supabase } from '../lib/supabase';
+import { getUserSettings, getWorkLogs, getCurrencySymbol, calculateEarnings } from '../lib/data-cache';
 import { startOfWeek, endOfWeek, eachDayOfInterval, format, parseISO } from 'date-fns';
 
 // Check authentication
@@ -25,25 +26,13 @@ nextWeekDate.setDate(nextWeekDate.getDate() + 1);
 const prevUrl = `/weekly?date=${prevWeekDate.toISOString().slice(0,10)}`;
 const nextUrl = `/weekly?date=${nextWeekDate.toISOString().slice(0,10)}`;
 
-// Load user settings (currency and hourly rate)
-const settingsRes = await supabase
-  .from('user_settings')
-  .select('currency, hourly_rate')
-  .eq('user_id', user.id)
-  .maybeSingle();
-const settings = settingsRes.data as { currency: string; hourly_rate: number } | null;
+// Load user settings using cached helper
+const settings = await getUserSettings(user.id);
+const currency = settings.currency;
+const hourlyRate = settings.hourly_rate;
 
-const currency = settings?.currency ?? 'GBP';
-const hourlyRate = Number(settings?.hourly_rate ?? 10);
-
-// Fetch work logs for the week
-const logsRes = await supabase
-  .from('work_logs')
-  .select('start_time, total_seconds, hourly_rate_at_time')
-  .eq('user_id', user.id)
-  .gte('start_time', weekStart.toISOString())
-  .lte('start_time', weekEnd.toISOString());
-const logs = (logsRes.data as { start_time: string; total_seconds: number; hourly_rate_at_time: number | null }[] | null) || [];
+// Fetch work logs for the week with caching
+const logs = await getWorkLogs(user.id, weekStart.toISOString(), weekEnd.toISOString());
 
 // Initialize all days with 0
 const daysData: Record<string, number> = {};
@@ -323,7 +312,7 @@ const rateTextByIndex = Object.keys(daysData).map(d => {
 
     // Inline edit handler for hours cells
     const table = document.querySelector('.data-table');
-      table && table.addEventListener('click', (e) => {
+    table && table.addEventListener('click', (e) => {
         const target = e.target;
         if (!(target instanceof HTMLElement)) return;
         const td = target.closest('.editable-hours');
@@ -363,7 +352,6 @@ const rateTextByIndex = Object.keys(daysData).map(d => {
           if (ev.key === 'Escape') { td.textContent = current; }
         });
         input.addEventListener('blur', save);
-      });
     });
   </script>
 </BaseLayout>

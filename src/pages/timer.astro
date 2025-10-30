@@ -1,0 +1,249 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabase } from '../lib/supabase';
+import { getTasksForLog } from '../lib/data-cache';
+
+// Auth
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Motivational quotes (static)
+const quotes = [
+  "The only way to do great work is to love what you do. — Steve Jobs",
+  "Success is not final, failure is not fatal: It is the courage to continue that counts. — Winston Churchill",
+  "Don't watch the clock; do what it does. Keep going. — Sam Levenson",
+  "Hard work beats talent when talent doesn't work hard. — Tim Notke",
+  "Dream big and dare to fail. — Norman Vaughan",
+  "Start where you are. Use what you have. Do what you can. — Arthur Ashe",
+  "The future depends on what you do today. — Mahatma Gandhi",
+  "Believe you can and you're halfway there. — Theodore Roosevelt",
+  "Quality is not an act, it is a habit. — Aristotle",
+  "It always seems impossible until it's done. — Nelson Mandela",
+  "Success usually comes to those who are too busy to be looking for it. — Henry David Thoreau",
+  "You miss 100% of the shots you don't take. — Wayne Gretzky",
+  "In the middle of every difficulty lies opportunity. — Albert Einstein",
+  "Keep your face always toward the sunshine—and shadows will fall behind you. — Walt Whitman",
+  "Act as if what you do makes a difference. It does. — William James",
+  "Either you run the day or the day runs you. — Jim Rohn",
+  "Do what you can, with what you have, where you are. — Theodore Roosevelt",
+  "The harder the conflict, the greater the triumph. — George Washington",
+  "Don't wait. The time will never be just right. — Napoleon Hill",
+  "Believe in yourself and all that you are. — Christian D. Larson",
+  "The best way out is always through. — Robert Frost"
+];
+const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
+// Load current active log
+const { data: activeLog } = await supabase
+  .from('work_logs')
+  .select('id, start_time, pause_time, end_time, total_seconds, hourly_rate_at_time')
+  .eq('user_id', user.id)
+  .is('end_time', null)
+  .order('id', { ascending: false })
+  .limit(1)
+  .maybeSingle();
+
+type ActiveLogRow = {
+  id: number;
+  start_time: string;
+  pause_time: string | null;
+  end_time: string | null;
+  total_seconds: number;
+  hourly_rate_at_time: number | null;
+};
+
+const active = activeLog as ActiveLogRow | null;
+const currentLog = active ? {
+  id: active.id,
+  start_time: active.start_time,
+  pause_time: active.pause_time,
+  end_time: active.end_time,
+  total_seconds: active.total_seconds,
+  hourly_rate_at_time: active.hourly_rate_at_time
+} : null;
+
+// Completed tasks for active log (optional)
+const tasks = currentLog ? await getTasksForLog(currentLog.id) : [];
+
+const initialState = {
+  userId: user.id as string,
+  currentLog
+};
+---
+
+<BaseLayout title="Timer">
+  <div class="dashboard">
+    <div class="card timer-card">
+      <div class="quote">{randomQuote}</div>
+      <div class="timer-ui">
+        <div class="time-display" id="timeDisplay">00:00:00</div>
+        <div class="status" id="statusText">{currentLog ? (currentLog.pause_time ? 'Paused' : 'Working...') : 'Not started'}</div>
+        <div class="controls">
+          <button id="startBtn" class="btn btn-success">Start</button>
+          <button id="pauseBtn" class="btn btn-warning">Pause</button>
+          <button id="resumeBtn" class="btn btn-primary">Resume</button>
+          <button id="endBtn" class="btn btn-danger">End Day</button>
+        </div>
+      </div>
+    </div>
+
+    {tasks.length > 0 && (
+      <div class="card tasks-card">
+        <h3 class="tasks-title">Completed Tasks (current session)</h3>
+        <ul class="tasks-list">
+          {tasks.map((task) => (
+            <li class="task-item">
+              <span class="task-description">{task.description}</span>
+              <span class="task-duration">
+                {
+                  (() => {
+                    const s = Number(task.duration || 0);
+                    const h = String(Math.floor(s / 3600)).padStart(2, '0');
+                    const m = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+                    const sec = String(s % 60).padStart(2, '0');
+                    return `${h}:${m}:${sec}`;
+                  })()
+                }
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+  </div>
+
+  <script define:vars={{ initialState }}>
+    function formatHMS(seconds) {
+      const s = Math.max(0, Math.floor(seconds));
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    }
+
+    let log = initialState.currentLog;
+    let isPending = false;
+
+    const timeDisplay = document.getElementById('timeDisplay');
+    const statusText = document.getElementById('statusText');
+    const startBtn = document.getElementById('startBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resumeBtn = document.getElementById('resumeBtn');
+    const endBtn = document.getElementById('endBtn');
+
+    function elapsedSeconds() {
+      if (!log) return 0;
+      const base = Number(log.total_seconds || 0);
+      if (log.pause_time) return base;
+      const startUnix = Math.floor(new Date(log.start_time).getTime() / 1000);
+      const currentUnix = Math.floor(Date.now() / 1000);
+      return base + Math.max(0, currentUnix - startUnix);
+    }
+
+    function render() {
+      timeDisplay.textContent = formatHMS(elapsedSeconds());
+      statusText.textContent = log ? (log.pause_time ? 'Paused' : 'Working...') : 'Not started';
+      startBtn.style.display = log ? 'none' : '';
+      pauseBtn.style.display = log && !log.pause_time ? '' : 'none';
+      resumeBtn.style.display = log && log.pause_time ? '' : 'none';
+      endBtn.style.display = log ? '' : 'none';
+      [startBtn, pauseBtn, resumeBtn, endBtn].forEach(b => b.disabled = isPending);
+    }
+
+    async function start() {
+      if (isPending || log) return;
+      isPending = true; render();
+      try {
+        const res = await fetch('/api/start', { method: 'POST' });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          throw new Error('Failed');
+        }
+      } catch (e) {
+        console.error(e); alert('Failed to start');
+        isPending = false; render();
+      }
+    }
+
+    async function pause() {
+      if (isPending || !log || log.pause_time) return;
+      isPending = true; render();
+      try {
+        const res = await fetch('/api/pause', { method: 'POST' });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          throw new Error('Failed');
+        }
+      } catch (e) {
+        console.error(e); alert('Failed to pause');
+        isPending = false; render();
+      }
+    }
+
+    async function resume() {
+      if (isPending || !log || !log.pause_time) return;
+      isPending = true; render();
+      try {
+        const res = await fetch('/api/resume', { method: 'POST' });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          throw new Error('Failed');
+        }
+      } catch (e) {
+        console.error(e); alert('Failed to resume');
+        isPending = false; render();
+      }
+    }
+
+    async function endDay() {
+      if (isPending || !log) return;
+      isPending = true; render();
+      try {
+        const res = await fetch('/api/end-day', { method: 'POST' });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          throw new Error('Failed');
+        }
+      } catch (e) {
+        console.error(e); alert('Failed to end day');
+        isPending = false; render();
+      }
+    }
+
+    startBtn.addEventListener('click', start);
+    pauseBtn.addEventListener('click', pause);
+    resumeBtn.addEventListener('click', resume);
+    endBtn.addEventListener('click', endDay);
+
+    render();
+    setInterval(() => { timeDisplay.textContent = formatHMS(elapsedSeconds()); }, 1000);
+  </script>
+
+  <style>
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xl);
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .timer-card { padding: var(--space-2xl); }
+    .quote { color: var(--color-muted); margin-bottom: var(--space-xl); font-style: italic; }
+    .timer-ui { display: flex; flex-direction: column; align-items: center; gap: var(--space-lg); }
+    .time-display { font-size: 4rem; font-weight: 800; font-family: var(--font-mono); }
+    .status { color: var(--color-muted); }
+    .controls { display: flex; gap: var(--space-md); }
+    .tasks-card { padding: var(--space-xl); }
+    .tasks-title { margin-bottom: var(--space-lg); }
+    .tasks-list { list-style: none; padding: 0; display: grid; gap: var(--space-sm); }
+    .task-item { display: flex; justify-content: space-between; align-items: center; padding: var(--space-md); border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+    .task-description { color: var(--color-text); }
+    .task-duration { font-family: var(--font-mono); color: var(--color-muted); }
+  </style>
+</BaseLayout>

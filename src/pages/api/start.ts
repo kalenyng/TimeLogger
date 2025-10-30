@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
+import { getUserSettings } from '../../lib/data-cache';
 
 export const POST: APIRoute = async ({ request, redirect }) => {
   const { data: { user } } = await supabase.auth.getUser();
@@ -11,13 +12,9 @@ export const POST: APIRoute = async ({ request, redirect }) => {
     });
   }
 
-  // Fetch current hourly rate to snapshot on the work log
-  const { data: settings } = await supabase
-    .from('user_settings')
-    .select('hourly_rate')
-    .eq('user_id', user.id)
-    .maybeSingle();
-  const currentRate = Number((settings as { hourly_rate?: number } | null)?.hourly_rate ?? 10);
+  // Fetch current hourly rate using cached helper
+  const settings = await getUserSettings(user.id);
+  const currentRate = settings.hourly_rate;
 
   const { error } = await supabase
     .from('work_logs')

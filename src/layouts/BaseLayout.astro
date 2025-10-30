@@ -209,65 +209,6 @@ const currentPath = Astro.url.pathname;
         window.location.href = '/login';
       });
 
-      // Auto-add loading spinners to form buttons on submit
-      document.addEventListener('submit', (e) => {
-        const form = e.target;
-        if (form instanceof HTMLFormElement) {
-          const submitBtn = form.querySelector('button[type="submit"]');
-          if (submitBtn && submitBtn instanceof HTMLElement) {
-            submitBtn.classList.add('loading');
-            // Hide text during load
-            const originalText = submitBtn.textContent;
-            submitBtn.setAttribute('data-text', originalText || '');
-            submitBtn.textContent = '';
-          }
-        }
-      });
-
-      // Aggressive hover prefetching for instant navigation
-      document.addEventListener('mouseover', (e) => {
-        const link = (e.target instanceof HTMLElement ? e.target.closest('a[href]') : null);
-        if (!link || !(link instanceof HTMLAnchorElement)) return;
-        if (link.getAttribute('target') === '_blank' || link.href.startsWith('#')) return;
-        
-        const url = new URL(link.href);
-        if (url.origin !== window.location.origin) return;
-        if (link.dataset.prefetched) return;
-        
-        // Prefetch on hover
-        const prefetch = document.createElement('link');
-        prefetch.rel = 'prefetch';
-        prefetch.href = link.href;
-        document.head.appendChild(prefetch);
-        link.dataset.prefetched = 'true';
-      });
-
-      // Show loading skeleton on navigation
-      document.addEventListener('click', (e) => {
-        const link = (e.target instanceof HTMLElement ? e.target.closest('a[href]') : null);
-        if (!link || !(link instanceof HTMLAnchorElement)) return;
-        if (link.getAttribute('target') === '_blank' || link.href.startsWith('#')) return;
-        
-        const url = new URL(link.href);
-        if (url.origin !== window.location.origin) return;
-        if (url.pathname === window.location.pathname) return;
-
-        // Show skeleton immediately
-        const skeleton = document.createElement('div');
-        skeleton.className = 'page-skeleton';
-        skeleton.innerHTML = `
-          <div class="skeleton-header"></div>
-          <div class="skeleton-content">
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-            <div class="skeleton-card"></div>
-          </div>
-        `;
-        document.body.appendChild(skeleton);
-        
-        // Debug: log to verify skeleton is shown
-        console.log('Navigation skeleton shown for:', url.pathname);
-      });
     </script>
   </body>
 </html>

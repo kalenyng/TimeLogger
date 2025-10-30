@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { supabase } from '../lib/supabase';
+import { getUserSettings } from '../lib/data-cache';
 import '../styles/global.css';
 
 let error: string | null = null;
@@ -11,16 +12,10 @@ if (!user) {
   return Astro.redirect('/login');
 }
 
-// Load existing settings
-const existingRes = await supabase
-  .from('user_settings')
-  .select('currency, hourly_rate')
-  .eq('user_id', user.id)
-  .maybeSingle();
-const existing = existingRes.data as { currency?: string; hourly_rate?: number } | null;
-
-let currency = existing?.currency ?? 'GBP';
-let hourlyRate = Number(existing?.hourly_rate ?? 10);
+// Load existing settings using cached helper
+const existing = await getUserSettings(user.id);
+let currency = existing.currency;
+let hourlyRate = existing.hourly_rate;
 
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
