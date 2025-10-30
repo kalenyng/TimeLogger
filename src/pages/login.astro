@@ -1,0 +1,112 @@
+---
+import '../styles/global.css';
+import '../styles/auth.css';
+import { supabase } from '../lib/supabase';
+
+let error: string | null = null;
+let success: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const email = String(formData.get('email') ?? '');
+    const password = String(formData.get('password') ?? '');
+
+    if (!email || !password) {
+      error = 'Please provide both email and password';
+    } else {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (signInError) {
+        error = signInError.message;
+      } else {
+        return Astro.redirect('/');
+      }
+    }
+  } catch (e) {
+    error = 'An unexpected error occurred';
+  }
+}
+
+if (Astro.url.searchParams.get('registered') === 'true') {
+  success = 'Registration successful! Please log in.';
+}
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Time Logger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="auth-container">
+      <div class="auth-card">
+        <h1 class="auth-title">Welcome Back</h1>
+        <p class="auth-subtitle">Log in to track your work time</p>
+
+        {success && (
+          <div class="auth-message auth-message-success">
+            {success}
+          </div>
+        )}
+
+        {error && (
+          <div class="auth-message auth-message-error">
+            {error}
+          </div>
+        )}
+
+        <form method="POST" class="auth-form">
+          <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              class="form-input"
+              placeholder="you@example.com"
+              required
+              autofocus
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="form-input"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary auth-submit-btn">
+            Log In
+          </button>
+        </form>
+
+        <p class="auth-link-text">
+          Don't have an account? <a href="/register">Sign up</a>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // Theme initialization
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+  </body>
+</html>
+
+

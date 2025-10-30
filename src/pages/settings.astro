@@ -1,0 +1,96 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabase } from '../lib/supabase';
+import '../styles/global.css';
+
+let error: string | null = null;
+let success: string | null = null;
+
+const { data: { user } } = await supabase.auth.getUser();
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Load existing settings
+const existingRes = await supabase
+  .from('user_settings')
+  .select('currency, hourly_rate')
+  .eq('user_id', user.id)
+  .maybeSingle();
+const existing = existingRes.data as { currency?: string; hourly_rate?: number } | null;
+
+let currency = existing?.currency ?? 'GBP';
+let hourlyRate = Number(existing?.hourly_rate ?? 10);
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  currency = String(form.get('currency') ?? 'GBP');
+  hourlyRate = Number(form.get('hourly_rate') ?? 10);
+
+  if (!currency || !Number.isFinite(hourlyRate) || hourlyRate <= 0) {
+    error = 'Please provide a valid currency and hourly rate (> 0).';
+  } else {
+    const { error: upsertError } = await supabase
+      .from('user_settings')
+      .upsert({ user_id: user.id, currency, hourly_rate: hourlyRate, updated_at: new Date().toISOString() } as any, { onConflict: 'user_id' });
+
+    if (upsertError) {
+      error = upsertError.message;
+    } else {
+      success = 'Settings saved.';
+    }
+  }
+}
+---
+
+<BaseLayout title="Settings">
+  <div class="settings-page">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Settings</h1>
+        <p class="page-subtitle">Configure your currency and hourly rate</p>
+      </div>
+      <a href="/" class="btn btn-ghost">
+        ← Back
+      </a>
+    </div>
+
+    {success && (
+      <div class="card success-box">{success}</div>
+    )}
+    {error && (
+      <div class="card error-box">{error}</div>
+    )}
+
+    <form method="POST" class="card form-card">
+      <div class="form-group">
+        <label class="form-label" for="currency">Currency</label>
+        <select id="currency" name="currency" class="form-select">
+          <option value="ZAR" selected={currency === 'ZAR'}>ZAR (R)</option>
+          <option value="USD" selected={currency === 'USD'}>USD ($)</option>
+          <option value="GBP" selected={currency === 'GBP'}>GBP (£)</option>
+          <option value="EUR" selected={currency === 'EUR'}>EUR (€)</option>
+        </select>
+        <small class="form-helper">Choose the currency for earnings.</small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="hourly_rate">Hourly Rate</label>
+        <input id="hourly_rate" name="hourly_rate" type="number" min="0.01" step="0.01" class="form-input" value={hourlyRate} />
+        <small class="form-helper">Your earnings will be calculated using this rate.</small>
+      </div>
+
+      <button class="btn btn-primary">Save Settings</button>
+    </form>
+  </div>
+</BaseLayout>
+
+<style>
+  .settings-page { max-width: 720px; margin: 0 auto; }
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-2xl); }
+  .page-title { font-size: var(--text-3xl); font-weight: 700; background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .page-subtitle { color: var(--color-muted); }
+  .form-card { padding: var(--space-xl); }
+  .success-box { border: 1px solid var(--color-success); background: var(--color-success-light); color: var(--color-success); margin-bottom: var(--space-lg); }
+  .error-box { border: 1px solid var(--color-danger); background: var(--color-danger-light); color: var(--color-danger); margin-bottom: var(--space-lg); }
+</style>

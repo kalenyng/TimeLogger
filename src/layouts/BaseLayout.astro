@@ -1,0 +1,477 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="Track your work time and tasks efficiently" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="generator" content={Astro.generator} />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+    
+    <title>{title} - Time Logger</title>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+          <a href="/" class="logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="8" fill="url(#gradient)"/>
+              <circle cx="16" cy="16" r="7" stroke="white" stroke-width="2"/>
+              <path d="M16 11v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <defs>
+                <linearGradient id="gradient" x1="0" y1="0" x2="32" y2="32">
+                  <stop offset="0%" stop-color="#3b82f6"/>
+                  <stop offset="100%" stop-color="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <span class="logo-text">Time Logger</span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a href="/" class:list={["nav-item", { active: currentPath === "/" }]}> 
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <circle cx="10" cy="10" r="7" stroke-width="2"/>
+              <path d="M10 5v5l3 3" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span>Timer</span>
+          </a>
+
+          <a href="/history" class:list={["nav-item", { active: currentPath === "/history" }]}> 
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M6.75 3v3m10.5-3v3M3 9.75h18M5.25 7.5h13.5A2.25 2.25 0 0 1 21 9.75v8.25A2.25 2.25 0 0 1 18.75 20.25H5.25A2.25 2.25 0 0 1 3 18V9.75A2.25 2.25 0 0 1 5.25 7.5z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>History</span>
+          </a>
+
+          <a href="/weekly" class:list={["nav-item", { active: currentPath === "/weekly" }]}> 
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125z" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Weekly Report</span>
+          </a>
+
+          <a href="/settings" class:list={["nav-item", { active: currentPath === "/settings" }]}> 
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 0 1 0 .255c-.007.378.138.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.378-.138-.75-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Settings</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+            <svg class="theme-icon sun" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <circle cx="10" cy="10" r="4" stroke-width="2"/>
+              <path d="M10 1v2m0 14v2M3.93 3.93l1.41 1.41m11.32 11.32l1.41 1.41M1 10h2m14 0h2M3.93 16.07l1.41-1.41m11.32-11.32l1.41-1.41" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <svg class="theme-icon moon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          
+          <button class="logout-btn" id="logoutBtn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M15.75 6.75L21 12l-5.25 5.25M21 12H9" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M12 4.5H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5A2.25 2.25 0 0 0 6.75 19.5H12" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Mobile Header -->
+      <header class="mobile-header">
+        <button class="mobile-menu-btn" id="mobileMenuBtn">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 6h18M3 12h18M3 18h18" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="logo">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="32" height="32" rx="8" fill="url(#gradient-mobile)"/>
+            <circle cx="16" cy="16" r="7" stroke="white" stroke-width="2"/>
+            <path d="M16 11v5l3 3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="gradient-mobile" x1="0" y1="0" x2="32" y2="32">
+                <stop offset="0%" stop-color="#3b82f6"/>
+                <stop offset="100%" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="logo-text">Time Logger</span>
+        </div>
+        <button class="theme-toggle-mobile" id="themeToggleMobile" aria-label="Toggle theme">
+          <svg class="theme-icon sun" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+            <circle cx="10" cy="10" r="4" stroke-width="2"/>
+            <path d="M10 1v2m0 14v2M3.93 3.93l1.41 1.41m11.32 11.32l1.41 1.41M1 10h2m14 0h2M3.93 16.07l1.41-1.41m11.32-11.32l1.41-1.41" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <svg class="theme-icon moon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </header>
+
+      <!-- Main Content -->
+      <main class="main-content">
+        <div class="content-wrapper">
+          <slot />
+        </div>
+      </main>
+    </div>
+
+    <script>
+      // Theme Toggle
+      function initTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        updateThemeIcons(savedTheme);
+      }
+
+      function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        updateThemeIcons(newTheme);
+      }
+
+      function updateThemeIcons(theme: string) {
+        const allToggles = document.querySelectorAll('.theme-toggle, .theme-toggle-mobile');
+        allToggles.forEach(toggle => {
+          const sun = toggle.querySelector('.sun');
+          const moon = toggle.querySelector('.moon');
+          if (theme === 'dark') {
+            sun?.classList.remove('active');
+            (sun as HTMLElement | null)?.setAttribute('hidden', 'true');
+            moon?.classList.add('active');
+            (moon as HTMLElement | null)?.removeAttribute('hidden');
+          } else {
+            sun?.classList.add('active');
+            (sun as HTMLElement | null)?.removeAttribute('hidden');
+            moon?.classList.remove('active');
+            (moon as HTMLElement | null)?.setAttribute('hidden', 'true');
+          }
+        });
+      }
+
+      // Initialize theme on load
+      initTheme();
+
+      // Theme toggle listeners
+      document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
+      document.getElementById('themeToggleMobile')?.addEventListener('click', toggleTheme);
+
+      // Mobile menu toggle
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      const sidebar = document.getElementById('sidebar');
+      
+      mobileMenuBtn?.addEventListener('click', () => {
+        sidebar?.classList.toggle('mobile-open');
+      });
+
+      // Close mobile menu when clicking outside
+      document.addEventListener('click', (e) => {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.sidebar') && !target.closest('.mobile-menu-btn')) {
+          sidebar?.classList.remove('mobile-open');
+        }
+      });
+
+      // Logout functionality
+      document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        // Simple redirect for now
+        localStorage.removeItem('theme');
+        window.location.href = '/login';
+      });
+
+      // Auto-add loading spinners to form buttons on submit
+      document.addEventListener('submit', (e) => {
+        const form = e.target;
+        if (form instanceof HTMLFormElement) {
+          const submitBtn = form.querySelector('button[type="submit"]');
+          if (submitBtn && submitBtn instanceof HTMLElement) {
+            submitBtn.classList.add('loading');
+            // Hide text during load
+            const originalText = submitBtn.textContent;
+            submitBtn.setAttribute('data-text', originalText || '');
+            submitBtn.textContent = '';
+          }
+        }
+      });
+    </script>
+  </body>
+</html>
+
+<style>
+  /* ============================================
+     APP LAYOUT
+     ============================================ */
+  
+  .app-container {
+    display: flex;
+    min-height: 100vh;
+    background: var(--color-bg);
+  }
+
+  /* ============================================
+     SIDEBAR
+     ============================================ */
+  
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 260px;
+    background: var(--color-bg-secondary);
+    border-right: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    z-index: var(--z-sticky);
+    transition: transform var(--transition-base);
+  }
+
+  .sidebar-header {
+    padding: var(--space-xl) var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    text-decoration: none;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .logo-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Navigation */
+  .sidebar-nav {
+    flex: 1;
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    overflow-y: auto;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: 0.75rem var(--space-md);
+    color: var(--color-muted);
+    text-decoration: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    transition: all var(--transition-fast);
+    position: relative;
+  }
+
+  .nav-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 0;
+    background: var(--color-accent);
+    border-radius: 0 2px 2px 0;
+    transition: height var(--transition-fast);
+  }
+
+  .nav-item:hover {
+    color: var(--color-text);
+    background: var(--color-surface);
+  }
+
+  .nav-item.active {
+    color: var(--color-accent);
+    background: var(--color-accent-light);
+  }
+
+  .nav-item.active::before {
+    height: 70%;
+  }
+
+  .nav-item svg {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: block; /* avoid baseline misalignment */
+  }
+
+  /* Sidebar Footer */
+  .sidebar-footer {
+    padding: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    gap: var(--space-sm);
+  }
+
+  .theme-toggle,
+  .logout-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  /* Ensure footer icons are visually centered */
+  .sidebar-footer svg {
+    width: 20px;
+    height: 20px;
+    display: block; /* remove inline baseline quirks */
+  }
+
+  .theme-toggle:hover,
+  .logout-btn:hover {
+    background: var(--color-surface-hover);
+    border-color: var(--color-border-hover);
+    color: var(--color-text);
+  }
+
+  .theme-icon {
+    display: none;
+  }
+
+  .theme-icon.active {
+    display: block;
+  }
+
+  /* Stronger selector to prevent UA or other CSS from showing both */
+  .theme-toggle .theme-icon:not(.active),
+  .theme-toggle-mobile .theme-icon:not(.active) {
+    display: none !important;
+  }
+
+  /* ============================================
+     MOBILE HEADER
+     ============================================ */
+  
+  .mobile-header {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--color-bg-secondary);
+    border-bottom: 1px solid var(--color-border);
+    padding: 0 var(--space-md);
+    align-items: center;
+    justify-content: space-between;
+    z-index: var(--z-fixed);
+  }
+
+  .mobile-menu-btn,
+  .theme-toggle-mobile {
+    background: none;
+    border: none;
+    color: var(--color-text);
+    padding: 0.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+  }
+
+  .mobile-menu-btn:hover,
+  .theme-toggle-mobile:hover {
+    background: var(--color-surface);
+  }
+
+  /* ============================================
+     MAIN CONTENT
+     ============================================ */
+  
+  .main-content {
+    flex: 1;
+    margin-left: 260px;
+    min-height: 100vh;
+  }
+
+  .content-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: var(--space-2xl) var(--space-xl);
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+  
+  @media (max-width: 1024px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+
+    .sidebar.mobile-open {
+      transform: translateX(0);
+    }
+
+    .mobile-header {
+      display: flex;
+    }
+
+    .main-content {
+      margin-left: 0;
+      padding-top: 64px;
+    }
+
+    .content-wrapper {
+      padding: var(--space-xl) var(--space-md);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .content-wrapper {
+      padding: var(--space-lg) var(--space-md);
+    }
+
+    .sidebar {
+      width: 280px;
+    }
+  }
+</style>
+

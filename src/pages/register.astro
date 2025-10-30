@@ -1,0 +1,117 @@
+---
+import '../styles/global.css';
+import '../styles/auth.css';
+import { supabase } from '../lib/supabase';
+
+let error: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const email = String(formData.get('email') ?? '');
+    const password = String(formData.get('password') ?? '');
+    const confirmPassword = String(formData.get('confirmPassword') ?? '');
+
+    if (!email || !password || !confirmPassword) {
+      error = 'Please fill in all fields';
+    } else if (password !== confirmPassword) {
+      error = 'Passwords do not match';
+    } else if (password.length < 6) {
+      error = 'Password must be at least 6 characters';
+    } else {
+      const { error: signUpError } = await supabase.auth.signUp({
+        email,
+        password
+      });
+
+      if (signUpError) {
+        error = signUpError.message;
+      } else {
+        return Astro.redirect('/login?registered=true');
+      }
+    }
+  } catch (e) {
+    error = 'An unexpected error occurred';
+  }
+}
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - Time Logger</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div class="auth-container">
+      <div class="auth-card">
+        <h1 class="auth-title">Create Account</h1>
+        <p class="auth-subtitle">Start tracking your work time today</p>
+
+        {error && (
+          <div class="auth-message auth-message-error">
+            {error}
+          </div>
+        )}
+
+        <form method="POST" class="auth-form">
+          <div class="form-group">
+            <label for="email" class="form-label">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              class="form-input"
+              placeholder="you@example.com"
+              required
+              autofocus
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="password" class="form-label">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              class="form-input"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="confirmPassword" class="form-label">Confirm Password</label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              class="form-input"
+              placeholder="••••••••"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn btn-primary auth-submit-btn">
+            Create Account
+          </button>
+        </form>
+
+        <p class="auth-link-text">
+          Already have an account? <a href="/login">Log in</a>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // Theme initialization
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+  </body>
+</html>
+

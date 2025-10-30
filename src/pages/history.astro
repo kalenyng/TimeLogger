@@ -1,0 +1,449 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabase } from '../lib/supabase';
+
+// Check authentication
+const { data: { user } } = await supabase.auth.getUser();
+
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Load user settings for currency/hourly rate
+const { data: settings } = await supabase
+  .from('user_settings')
+  .select('currency, hourly_rate')
+  .eq('user_id', user.id)
+  .maybeSingle();
+
+const currency = (settings as { currency?: string } | null)?.currency ?? 'GBP';
+const hourlyRate = Number((settings as { hourly_rate?: number } | null)?.hourly_rate ?? 10);
+
+function currencySymbol(code: string) {
+  switch (code) {
+    case 'USD': return '$';
+    case 'EUR': return '€';
+    case 'GBP': return '£';
+    case 'JPY': return '¥';
+    case 'AUD': return 'A$';
+    case 'CAD': return 'C$';
+    case 'ZAR': return 'R';
+    default: return code + ' ';
+  }
+}
+const symbol = currencySymbol(currency);
+
+// Fetch completed work logs
+const { data: logs } = await supabase
+  .from('work_logs')
+  
+  .select('*')
+  .eq('user_id', user.id)
+  .not('end_time', 'is', null)
+  .order('start_time', { ascending: false });
+
+// Fetch tasks for each log
+type WorkLogRow = { id: number; start_time: string; end_time: string | null; total_seconds: number; description: string | null; hourly_rate_at_time: number | null };
+type TaskRow = { id: number; work_log_id: number; description: string; duration: number };
+
+async function fetchTasks(logId: number): Promise<TaskRow[]> {
+  const { data } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('work_log_id', logId)
+    .order('created_at', { ascending: true });
+  return (data as TaskRow[] | null) || [];
+}
+
+const enrichedLogs = await Promise.all(
+  ((logs as WorkLogRow[] | null) || []).map(async (log) => ({
+    log,
+    tasks: await fetchTasks(log.id)
+  }))
+);
+
+// Format time helper
+function formatTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+// Format date for display
+function formatDateTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
+  });
+}
+---
+
+<BaseLayout title="History">
+  <div class="history-page">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Work History</h1>
+        <p class="page-subtitle">View all your completed work sessions</p>
+      </div>
+    </div>
+
+    <!-- All-Time Earnings Card -->
+    {enrichedLogs.length > 0 && (
+      <div class="earnings-summary card">
+        <div class="earnings-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M3 18h18" stroke-width="2" stroke-linecap="round"/>
+            <path d="M3 14l5-5 4 4 6-6 3 3" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M21 10V6h-4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="earnings-content">
+          <div class="earnings-label">All-Time Earnings</div>
+          <div class="earnings-value">{symbol}{(enrichedLogs.reduce((acc, {log}) => {
+            const hours = (log.total_seconds || 0) / 3600;
+            const rate = typeof log.hourly_rate_at_time === 'number' && !isNaN(log.hourly_rate_at_time) ? log.hourly_rate_at_time : hourlyRate;
+            return acc + (hours * rate);
+          }, 0)).toFixed(2)}</div>
+        </div>
+      </div>
+    )}
+
+    {enrichedLogs.length === 0 ? (
+      <div class="empty-state card">
+        <svg width="64" height="64" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+          <rect x="3" y="4" width="14" height="14" rx="2" stroke-width="1.5"/>
+          <path d="M7 2v4M13 2v4M3 8h14" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <h3>No work history yet</h3>
+        <p>Start tracking your work time to see your history here</p>
+        <a href="/" class="btn btn-primary">Start Working</a>
+      </div>
+    ) : (
+      <div class="logs-list">
+        {enrichedLogs.map(({ log, tasks }) => (
+          <div class="log-card card">
+            <div class="log-header">
+              <div class="log-info">
+                <div class="log-date-range">
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                    <circle cx="10" cy="10" r="7" stroke-width="2"/>
+                    <path d="M10 5v5l3 3" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                  {formatDateTime(log.start_time)} → {formatDateTime(log.end_time || log.start_time)}
+                </div>
+                {log.description && (
+                  <div class="log-description">{log.description}</div>
+                )}
+              </div>
+              <div class="log-totals">
+                <div class="log-total">
+                  <div class="log-total-label">Total Time</div>
+                  <div class="log-total-value">{formatTime(log.total_seconds || 0)}</div>
+                </div>
+                <div class="log-total earnings">
+                  <div class="log-total-label">Earnings</div>
+                  <div class="log-total-value">{symbol}{((Math.round((((log.total_seconds || 0) / 3600) * hourlyRate) * 100) / 100).toFixed(2))}</div>
+                </div>
+              </div>
+            </div>
+
+            {tasks.length > 0 ? (
+              <div class="log-tasks">
+                <h4 class="log-tasks-title">
+                  Tasks Completed <span class="badge badge-primary">{tasks.length}</span>
+                </h4>
+                <ul class="log-tasks-list">
+                  {tasks.map((task) => (
+                    <li class="log-task-item">
+                      <svg class="log-task-check" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor">
+                        <path d="M4 10l4 4L16 6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <span class="log-task-description">{task.description}</span>
+                      <span class="log-task-duration">{formatTime(task.duration)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div class="log-no-tasks">
+                <small>No tasks recorded for this session</small>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .history-page {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  /* Page Header */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-xl);
+  }
+
+  /* Earnings Summary */
+  .earnings-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xl);
+    padding: var(--space-xl);
+    margin-bottom: var(--space-2xl);
+    background: linear-gradient(135deg, var(--color-success-light) 0%, var(--color-accent-light) 100%);
+    border: 1px solid var(--color-success);
+  }
+
+  .earnings-icon {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-success);
+    color: white;
+    border-radius: var(--radius-lg);
+    flex-shrink: 0;
+  }
+
+  .earnings-content {
+    flex: 1;
+  }
+
+  .earnings-label {
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .earnings-value {
+    font-size: var(--text-4xl);
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+    font-family: var(--font-mono);
+  }
+
+  .page-title {
+    font-size: var(--text-4xl);
+    font-weight: 700;
+    margin-bottom: var(--space-xs);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .page-subtitle {
+    font-size: var(--text-lg);
+    color: var(--color-muted);
+    margin: 0;
+  }
+
+  /* Empty State */
+  .empty-state {
+    text-align: center;
+    padding: var(--space-3xl);
+  }
+
+  .empty-state svg {
+    color: var(--color-muted);
+    margin-bottom: var(--space-xl);
+  }
+
+  .empty-state h3 {
+    font-size: var(--text-2xl);
+    margin-bottom: var(--space-sm);
+  }
+
+  .empty-state p {
+    color: var(--color-muted);
+    margin-bottom: var(--space-xl);
+  }
+
+  /* Logs List */
+  .logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .log-card {
+    padding: var(--space-xl);
+    transition: all var(--transition-base);
+  }
+
+  .log-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
+  }
+
+  /* Log Header */
+  .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-lg);
+  }
+
+  .log-info {
+    flex: 1;
+  }
+
+  .log-date-range {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--text-base);
+    font-weight: 500;
+    color: var(--color-text);
+    margin-bottom: var(--space-xs);
+  }
+
+  .log-date-range svg {
+    flex-shrink: 0;
+    color: var(--color-accent);
+  }
+
+  .log-description {
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+
+  .log-totals {
+    display: flex;
+    gap: var(--space-md);
+  }
+
+  .log-total {
+    text-align: right;
+    padding: var(--space-md) var(--space-lg);
+    background: var(--color-accent-light);
+    border: 1px solid var(--color-accent);
+    border-radius: var(--radius-md);
+  }
+
+  .log-total.earnings {
+    background: var(--color-success-light);
+    border-color: var(--color-success);
+  }
+
+  .log-total-label {
+    font-size: var(--text-xs);
+    color: var(--color-accent);
+    font-weight: 500;
+    margin-bottom: var(--space-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .log-total-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-accent);
+  }
+
+  /* Log Tasks */
+  .log-tasks {
+    /* No additional styling needed */
+  }
+
+  .log-tasks-title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: var(--text-base);
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+    color: var(--color-text-secondary);
+  }
+
+  .log-tasks-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .log-task-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+    padding: var(--space-md);
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+  }
+
+  .log-task-item:hover {
+    background: var(--color-surface);
+    border-color: var(--color-border-hover);
+  }
+
+  .log-task-check {
+    flex-shrink: 0;
+    color: var(--color-success);
+  }
+
+  .log-task-description {
+    flex: 1;
+    font-size: var(--text-sm);
+    color: var(--color-text);
+  }
+
+  .log-task-duration {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-muted);
+  }
+
+  .log-no-tasks {
+    text-align: center;
+    padding: var(--space-lg);
+    color: var(--color-muted);
+    font-style: italic;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    .log-header {
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    .log-totals { width: 100%; flex-direction: column; }
+    .log-total { width: 100%; }
+
+    .page-title {
+      font-size: var(--text-3xl);
+    }
+  }
+</style>
+

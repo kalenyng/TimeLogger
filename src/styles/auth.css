@@ -1,0 +1,108 @@
+/* ============================================
+   AUTH FORM STYLES
+   ============================================ */
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xl);
+  background: var(--color-bg);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-3xl);
+  box-shadow: var(--shadow-xl);
+}
+
+.auth-title {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  font-family: var(--font-display);
+  color: var(--color-text);
+  margin: 0 0 var(--space-sm);
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+
+.auth-subtitle {
+  font-size: var(--text-base);
+  color: var(--color-muted);
+  text-align: center;
+  margin: 0 0 var(--space-2xl);
+}
+
+/* Auth Messages */
+.auth-message {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xl);
+}
+
+.auth-message-success {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.auth-message-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+/* Auth Form */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+  margin-bottom: var(--space-xl);
+}
+
+.auth-submit-btn {
+  width: 100%;
+  margin-top: var(--space-md);
+  min-height: 48px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.auth-link-text {
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.auth-link-text a {
+  color: var(--color-accent);
+  font-weight: 500;
+}
+
+.auth-link-text a:hover {
+  color: var(--color-accent-hover);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .auth-card {
+    padding: var(--space-2xl);
+  }
+
+  .auth-title {
+    font-size: var(--text-2xl);
+  }
+
+  .auth-subtitle {
+    font-size: var(--text-sm);
+  }
+}
+

@@ -1,0 +1,19 @@
+{
+  "name": "time-logger-astro",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.5.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.77.0",
+    "astro": "^5.15.3",
+    "chart.js": "^4.5.1",
+    "date-fns": "^4.1.0"
+  }
+}
