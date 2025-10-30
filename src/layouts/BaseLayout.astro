@@ -23,6 +23,12 @@ const currentPath = Astro.url.pathname;
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Inter+Tight:wght@600;700;800&display=swap" rel="stylesheet">
     
+    <!-- Prefetch navigation links for faster tab switching -->
+    <link rel="prefetch" href="/">
+    <link rel="prefetch" href="/history">
+    <link rel="prefetch" href="/weekly">
+    <link rel="prefetch" href="/settings">
+    
     <title>{title} - Time Logger</title>
   </head>
   <body>
@@ -216,6 +222,30 @@ const currentPath = Astro.url.pathname;
             submitBtn.textContent = '';
           }
         }
+      });
+
+      // Show loading skeleton on navigation
+      document.addEventListener('click', (e) => {
+        const link = (e.target instanceof HTMLElement ? e.target.closest('a[href]') : null);
+        if (!link || !(link instanceof HTMLAnchorElement)) return;
+        if (link.getAttribute('target') === '_blank' || link.href.startsWith('#')) return;
+        
+        const url = new URL(link.href);
+        if (url.origin !== window.location.origin) return;
+        if (url.pathname === window.location.pathname) return;
+
+        // Show skeleton immediately
+        const skeleton = document.createElement('div');
+        skeleton.className = 'page-skeleton';
+        skeleton.innerHTML = `
+          <div class="skeleton-header"></div>
+          <div class="skeleton-content">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        `;
+        document.body.appendChild(skeleton);
       });
     </script>
   </body>
@@ -472,6 +502,68 @@ const currentPath = Astro.url.pathname;
     .sidebar {
       width: 280px;
     }
+  }
+
+  /* ============================================
+     PAGE LOADING SKELETON
+     ============================================ */
+  
+  .page-skeleton {
+    position: fixed;
+    top: 0;
+    left: 260px;
+    right: 0;
+    bottom: 0;
+    background: var(--color-bg);
+    z-index: 9999;
+    padding: var(--space-2xl) var(--space-xl);
+    animation: fadeIn 0.15s ease;
+  }
+
+  @media (max-width: 1024px) {
+    .page-skeleton {
+      left: 0;
+      top: 64px;
+    }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .skeleton-header {
+    width: 300px;
+    height: 48px;
+    background: var(--skeleton-gradient);
+    background-size: 200% 100%;
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-2xl);
+    animation: shimmer 1.5s infinite;
+  }
+
+  .skeleton-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xl);
+    max-width: 1200px;
+  }
+
+  .skeleton-card {
+    height: 200px;
+    background: var(--skeleton-gradient);
+    background-size: 200% 100%;
+    border-radius: var(--radius-lg);
+    animation: shimmer 1.5s infinite;
+  }
+
+  .skeleton-card:nth-child(2) {
+    height: 300px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
   }
 </style>
 

@@ -241,11 +241,16 @@ const rateTextByIndex = Object.keys(daysData).map(d => {
   </div>
 
   <script define:vars={{ labels, hoursData, rateTextByIndex }}>
-    window.addEventListener('DOMContentLoaded', async () => {
+    // Lazy-load Chart.js only when chart becomes visible
+    const canvas = document.getElementById('weeklyChart');
+    if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
+
+    const observer = new IntersectionObserver(async ([entry]) => {
+      if (!entry.isIntersecting) return;
+      observer.disconnect();
+
       async function ensureChart() {
-        // If Chart is already present (from previous navigation), reuse it
         if (window.Chart) return window.Chart;
-        // Load UMD build from CDN for reliability across environments
         await new Promise((resolve, reject) => {
           const s = document.createElement('script');
           s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.js';
@@ -258,8 +263,6 @@ const rateTextByIndex = Object.keys(daysData).map(d => {
 
       try {
         const Chart = await ensureChart();
-        const canvas = document.getElementById('weeklyChart');
-        if (!(canvas && canvas instanceof HTMLCanvasElement)) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
         new Chart(ctx, {
@@ -316,9 +319,12 @@ const rateTextByIndex = Object.keys(daysData).map(d => {
       } catch (e) {
         console.error('Failed to load chart', e);
       }
+    }, { threshold: 0.1 });
 
-      // Inline edit handler for hours cells
-      const table = document.querySelector('.data-table');
+    observer.observe(canvas);
+
+    // Inline edit handler for hours cells
+    const table = document.querySelector('.data-table');
       table && table.addEventListener('click', (e) => {
         const target = e.target;
         if (!(target instanceof HTMLElement)) return;
